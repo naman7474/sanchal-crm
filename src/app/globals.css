@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Kavach Palette */
+  --color-kavach: var(--kavach);
+  --color-kavach-50: var(--kavach-50);
+  --color-kavach-600: var(--kavach-600);
+  --color-kavach-700: var(--kavach-700);
+
+  --color-whatsapp: var(--whatsapp);
+
+  /* Layout Colors */
+  --color-bg-page: var(--bg-page);
+  --color-bg-card: var(--bg-card);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-input: var(--bg-input);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
+  --color-border: var(--border);
+
+  /* Semantic Colors */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-neutral: var(--neutral);
+
+  /* Shadcn Map Overrides */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: oklch(1 0 0);
+  /* White */
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--amber-500);
+  --color-accent-foreground: oklch(1 0 0);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--bg-card);
+  --color-popover-foreground: var(--foreground);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  /* Fonts */
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Basic Setup */
+  --background: #F8FAFC;
+  /* Slate 50 */
+  --foreground: #0F172A;
+  /* Slate 900 */
+
+  /* Kavach Base Colors */
+  --kavach: #4F46E5;
+  --kavach-50: #EEF2FF;
+  --kavach-600: #4F46E5;
+  --kavach-700: #4338CA;
+
+  --whatsapp: #25D366;
+
+  /* Background Layers */
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #0F172A;
+  --bg-input: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-active: #EEF2FF;
+  --border: #E2E8F0;
+
+  /* Semantic Colors */
+  --success: #10B981;
+  --warning: #F97316;
+  --danger: #F43F5E;
+  --neutral: #64748B;
+
+  /* Shadcn Mappings */
+  --primary: #4F46E5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #334155;
+  --muted: #F1F5F9;
+  --muted-foreground: #94A3B8;
+  --amber-500: #F59E0B;
+
+  --radius: 0.5rem;
+  /* 8px */
+}
+
+.dark {
+  /* Enforce light mode colors since CRMs are used in daytime */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --kavach: #4F46E5;
+  --kavach-50: #EEF2FF;
+  --kavach-600: #4F46E5;
+  --kavach-700: #4338CA;
+  --whatsapp: #25D366;
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #0F172A;
+  --bg-input: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-active: #EEF2FF;
+  --border: #E2E8F0;
+  --success: #10B981;
+  --warning: #F97316;
+  --danger: #F43F5E;
+  --neutral: #64748B;
+  --primary: #4F46E5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #334155;
+  --muted: #F1F5F9;
+  --muted-foreground: #94A3B8;
+  --amber-500: #F59E0B;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
