@@ -27,7 +27,7 @@ export function usePolicies(search?: string, customerId?: string) {
             if (error) throw error;
 
             // Flatten customer info into each policy record
-            return (data ?? []).map((p) => {
+            return (data ?? []).map((p: any) => {
                 const record = p as Record<string, unknown>;
                 const customers = record.customers as { customer_name: string; mobile_no: string; email: string } | null;
                 return {

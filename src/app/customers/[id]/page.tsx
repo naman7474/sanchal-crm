@@ -176,7 +176,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                                     </Button>
                                 </div>
                             ) : (
-                                policies.map(policy => (
+                                policies.map((policy: any) => (
                                     <Card key={policy.id} className="rounded-xl border-slate-200 shadow-sm overflow-hidden hover:border-indigo-200 transition-colors">
                                         <div className="p-5">
                                             <div className="flex justify-between items-start mb-4">

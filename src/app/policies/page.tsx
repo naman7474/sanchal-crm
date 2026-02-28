@@ -52,7 +52,7 @@ export default function PoliciesPage() {
     // Extract unique products from data for dynamic filter
     const productOptions = useMemo(() => {
         if (!policies) return [];
-        const products = [...new Set(policies.map(p => p.product).filter(Boolean))];
+        const products = [...new Set(policies.map((p: any) => p.product).filter(Boolean))];
         return products.sort();
     }, [policies]);
 
@@ -61,9 +61,9 @@ export default function PoliciesPage() {
     const filtered = useMemo(() => {
         if (!policies) return [];
         let list = policies;
-        if (typeFilter) list = list.filter(p => p.policy_type === typeFilter);
-        if (statusFilter) list = list.filter(p => p.status === statusFilter);
-        if (productFilter) list = list.filter(p => p.product === productFilter);
+        if (typeFilter) list = list.filter((p: any) => p.policy_type === typeFilter);
+        if (statusFilter) list = list.filter((p: any) => p.status === statusFilter);
+        if (productFilter) list = list.filter((p: any) => p.product === productFilter);
         return list;
     }, [policies, typeFilter, statusFilter, productFilter]);
 
@@ -108,7 +108,7 @@ export default function PoliciesPage() {
                     {productOptions.length > 0 && (
                         <select value={productFilter} onChange={e => setProductFilter(e.target.value)} className={cn(selectClass, "flex-1 md:flex-none md:w-auto min-w-0")}>
                             <option value="">All Products</option>
-                            {productOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                            {productOptions.map((p: any) => <option key={p} value={p}>{p}</option>)}
                         </select>
                     )}
                     {hasFilters && (
@@ -139,7 +139,7 @@ export default function PoliciesPage() {
                 <>
                     {/* Mobile: Compact Cards */}
                     <div className="md:hidden space-y-2">
-                        {filtered.map(policy => (
+                        {filtered.map((policy: any) => (
                             <div key={policy.id} className="bg-white border border-slate-200 rounded-lg p-3">
                                 <div className="flex items-start justify-between gap-2 mb-1.5">
                                     <div className="min-w-0">
@@ -175,7 +175,7 @@ export default function PoliciesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filtered.map((policy) => (
+                                {filtered.map((policy: any) => (
                                     <tr key={policy.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-slate-900">{policy.product}</div>
