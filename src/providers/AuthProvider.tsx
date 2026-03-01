@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import type { Profile, Organization } from "@/lib/types/database";
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     const supabase = createClient();
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         // Get initial session
@@ -92,9 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (profileData) {
                 const { organizations: orgData, ...profileOnly } = profileData as Record<string, unknown>;
-                setProfile(profileOnly as unknown as Profile);
+                const typedProfile = profileOnly as unknown as Profile;
+                setProfile(typedProfile);
                 if (orgData) {
                     setOrganization(orgData as unknown as Organization);
+                }
+                // Pre-cache org_id for mutations (avoids N+1 queries)
+                if (typedProfile.org_id) {
+                    queryClient.setQueryData(["org-id"], typedProfile.org_id);
                 }
             }
         } catch (error) {
@@ -108,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setProfile(null);
         setOrganization(null);
+        // Clear cached org_id
+        queryClient.removeQueries({ queryKey: ["org-id"] });
     }
 
     return (

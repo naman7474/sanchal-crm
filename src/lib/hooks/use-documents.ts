@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Document as DocType, DocumentInput } from "@/lib/types/database";
+import { getOrgIdFromCache } from "./use-org";
 
 const supabase = createClient();
+const DEFAULT_LIMIT = 100;
 
-export function useDocuments(customerId?: string) {
+export function useDocuments(customerId?: string, limit: number = DEFAULT_LIMIT) {
     return useQuery({
-        queryKey: ["documents", customerId],
+        queryKey: ["documents", customerId, limit],
         queryFn: async () => {
             let query = supabase
                 .from("documents")
                 .select("*, customers(customer_name)")
-                .order("created_at", { ascending: false });
+                .order("created_at", { ascending: false })
+                .limit(limit);
 
             if (customerId) {
                 query = query.eq("customer_id", customerId);
@@ -41,12 +44,17 @@ export function useUploadDocument() {
             documentType: string;
             notes?: string;
         }) => {
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("org_id")
-                .single();
+            // Try to get org_id from cache first (avoids extra DB call)
+            let orgId = getOrgIdFromCache(queryClient);
 
-            const orgId = profile!.org_id;
+            if (!orgId) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("org_id")
+                    .single();
+                orgId = profile!.org_id;
+                queryClient.setQueryData(["org-id"], orgId);
+            }
             const filePath = `${orgId}/${customerId}/${Date.now()}_${file.name}`;
 
             // Upload to Supabase Storage

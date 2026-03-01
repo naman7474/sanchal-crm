@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Policy, PolicyInput } from "@/lib/types/database";
+import { getOrgIdFromCache } from "./use-org";
 
 const supabase = createClient();
+const DEFAULT_LIMIT = 100;
 
-export function usePolicies(search?: string, customerId?: string) {
+export function usePolicies(search?: string, customerId?: string, limit: number = DEFAULT_LIMIT) {
     return useQuery({
-        queryKey: ["policies", search, customerId],
+        queryKey: ["policies", search, customerId, limit],
         queryFn: async () => {
             let query = supabase
                 .from("policies")
                 .select("*, customers!inner(customer_name, mobile_no, email)")
-                .order("created_at", { ascending: false });
+                .order("created_at", { ascending: false })
+                .limit(limit);
 
             if (customerId) {
                 query = query.eq("customer_id", customerId);
@@ -63,10 +66,17 @@ export function useCreatePolicy() {
 
     return useMutation({
         mutationFn: async (input: Partial<PolicyInput>) => {
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("org_id")
-                .single();
+            // Try to get org_id from cache first (avoids extra DB call)
+            let orgId = getOrgIdFromCache(queryClient);
+
+            if (!orgId) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("org_id")
+                    .single();
+                orgId = profile!.org_id;
+                queryClient.setQueryData(["org-id"], orgId);
+            }
 
             // Auto-calculate commission fields
             const netOd = input.net_od_premium || 0;
@@ -86,7 +96,7 @@ export function useCreatePolicy() {
                 .from("policies")
                 .insert({
                     ...input,
-                    org_id: profile!.org_id,
+                    org_id: orgId,
                     before_tds: beforeTds,
                     tds_amount: tds,
                     commission: commission,

@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Lead, LeadInput } from "@/lib/types/database";
+import { getOrgIdFromCache } from "./use-org";
 
 const supabase = createClient();
+const DEFAULT_LIMIT = 100;
 
-export function useLeads(search?: string, status?: string) {
+export function useLeads(search?: string, status?: string, limit: number = DEFAULT_LIMIT) {
     return useQuery({
-        queryKey: ["leads", search, status],
+        queryKey: ["leads", search, status, limit],
         queryFn: async () => {
             let query = supabase
                 .from("leads")
                 .select("*")
-                .order("created_at", { ascending: false });
+                .order("created_at", { ascending: false })
+                .limit(limit);
 
             if (search) {
                 query = query.or(
@@ -51,16 +54,23 @@ export function useCreateLead() {
 
     return useMutation({
         mutationFn: async (input: Partial<LeadInput>) => {
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("org_id")
-                .single();
+            // Try to get org_id from cache first (avoids extra DB call)
+            let orgId = getOrgIdFromCache(queryClient);
+
+            if (!orgId) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("org_id")
+                    .single();
+                orgId = profile!.org_id;
+                queryClient.setQueryData(["org-id"], orgId);
+            }
 
             const { data, error } = await supabase
                 .from("leads")
                 .insert({
                     ...input,
-                    org_id: profile!.org_id,
+                    org_id: orgId,
                 })
                 .select()
                 .single();

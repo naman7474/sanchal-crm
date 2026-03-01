@@ -1,17 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { Customer, CustomerInput } from "@/lib/types/database";
+import { getOrgIdFromCache } from "./use-org";
 
 const supabase = createClient();
+const DEFAULT_LIMIT = 100; // Prevent unbounded queries
 
-export function useCustomers(search?: string, status?: string) {
+export function useCustomers(search?: string, status?: string, limit: number = DEFAULT_LIMIT) {
     return useQuery({
-        queryKey: ["customers", search, status],
+        queryKey: ["customers", search, status, limit],
         queryFn: async () => {
             let query = supabase
                 .from("customers")
                 .select("*, policies(count)")
-                .order("created_at", { ascending: false });
+                .order("created_at", { ascending: false })
+                .limit(limit);
 
             if (search) {
                 query = query.or(
@@ -51,17 +54,25 @@ export function useCreateCustomer() {
 
     return useMutation({
         mutationFn: async (input: Partial<CustomerInput>) => {
-            // org_id is auto-scoped by RLS, we still need to pass it for the insert
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("org_id")
-                .single();
+            // Try to get org_id from cache first (avoids extra DB call)
+            let orgId = getOrgIdFromCache(queryClient);
+
+            if (!orgId) {
+                // Fallback: fetch if not cached
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("org_id")
+                    .single();
+                orgId = profile!.org_id;
+                // Cache it for future mutations
+                queryClient.setQueryData(["org-id"], orgId);
+            }
 
             const { data, error } = await supabase
                 .from("customers")
                 .insert({
                     ...input,
-                    org_id: profile!.org_id,
+                    org_id: orgId,
                 })
                 .select()
                 .single();

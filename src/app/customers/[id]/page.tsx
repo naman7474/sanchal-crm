@@ -1,13 +1,17 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit, Mail, Phone, Calendar, Download, MoreVertical, Loader2, Upload, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCustomer } from "@/lib/hooks/use-customers";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCustomer, useUpdateCustomer } from "@/lib/hooks/use-customers";
 import { usePolicies } from "@/lib/hooks/use-policies";
 import { useDocuments } from "@/lib/hooks/use-documents";
 
@@ -26,6 +30,47 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     const { data: customer, isLoading: customerLoading } = useCustomer(id);
     const { data: policies, isLoading: policiesLoading } = usePolicies(undefined, id);
     const { data: documents, isLoading: docsLoading } = useDocuments(id);
+    const updateCustomer = useUpdateCustomer();
+
+    const [editOpen, setEditOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        customer_name: "",
+        mobile_no: "",
+        email: "",
+        address: "",
+        date_of_birth: "",
+        id_type: "",
+        id_number: "",
+        status: "active" as "active" | "prospect" | "inactive" | "churned",
+        source: "",
+        notes: "",
+    });
+
+    const openEditDialog = () => {
+        if (customer) {
+            setFormData({
+                customer_name: customer.customer_name || "",
+                mobile_no: customer.mobile_no || "",
+                email: customer.email || "",
+                address: customer.address || "",
+                date_of_birth: customer.date_of_birth || "",
+                id_type: customer.id_type || "",
+                id_number: customer.id_number || "",
+                status: customer.status,
+                source: customer.source || "",
+                notes: customer.notes || "",
+            });
+            setEditOpen(true);
+        }
+    };
+
+    const handleSave = async () => {
+        await updateCustomer.mutateAsync({
+            id,
+            ...formData,
+        });
+        setEditOpen(false);
+    };
 
     if (customerLoading) {
         return (
@@ -73,7 +118,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 md:mt-0 self-start md:self-auto w-full md:w-auto">
-                    <Button variant="outline" className="flex-1 md:flex-none border-slate-200 text-slate-700 bg-white">
+                    <Button variant="outline" className="flex-1 md:flex-none border-slate-200 text-slate-700 bg-white" onClick={openEditDialog}>
                         <Edit className="w-4 h-4 md:mr-2" />
                         <span className="hidden md:inline">Edit</span>
                     </Button>
@@ -249,6 +294,137 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
 
                 </div>
             </div>
+
+            {/* Edit Customer Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Client</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="customer_name">Name *</Label>
+                            <Input
+                                id="customer_name"
+                                value={formData.customer_name}
+                                onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
+                                placeholder="Full name"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="mobile_no">Mobile</Label>
+                                <Input
+                                    id="mobile_no"
+                                    value={formData.mobile_no}
+                                    onChange={(e) => setFormData({ ...formData, mobile_no: e.target.value })}
+                                    placeholder="10-digit mobile"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    placeholder="email@example.com"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="date_of_birth">Date of Birth</Label>
+                            <Input
+                                id="date_of_birth"
+                                type="date"
+                                value={formData.date_of_birth}
+                                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="id_type">ID Type</Label>
+                                <Select value={formData.id_type} onValueChange={(v) => setFormData({ ...formData, id_type: v })}>
+                                    <SelectTrigger id="id_type">
+                                        <SelectValue placeholder="Select ID type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Aadhaar">Aadhaar</SelectItem>
+                                        <SelectItem value="PAN">PAN</SelectItem>
+                                        <SelectItem value="Passport">Passport</SelectItem>
+                                        <SelectItem value="Driving License">Driving License</SelectItem>
+                                        <SelectItem value="Voter ID">Voter ID</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="id_number">ID Number</Label>
+                                <Input
+                                    id="id_number"
+                                    value={formData.id_number}
+                                    onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
+                                    placeholder="ID number"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="status">Status</Label>
+                                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as typeof formData.status })}>
+                                    <SelectTrigger id="status">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="prospect">Lead</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="churned">Churned</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="source">Source</Label>
+                                <Select value={formData.source} onValueChange={(v) => setFormData({ ...formData, source: v })}>
+                                    <SelectTrigger id="source">
+                                        <SelectValue placeholder="Select source" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Referral">Referral</SelectItem>
+                                        <SelectItem value="Walk-in">Walk-in</SelectItem>
+                                        <SelectItem value="Online">Online</SelectItem>
+                                        <SelectItem value="Social Media">Social Media</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Input
+                                id="address"
+                                value={formData.address}
+                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                placeholder="Full address"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="notes">Notes</Label>
+                            <Input
+                                id="notes"
+                                value={formData.notes}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                placeholder="Additional notes"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSave} disabled={updateCustomer.isPending || !formData.customer_name}>
+                            {updateCustomer.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
