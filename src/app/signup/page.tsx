@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Upload, X } from "lucide-react";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -17,6 +17,28 @@ export default function SignupPage() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
+
+    function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error("Logo must be under 2MB");
+            return;
+        }
+        setLogoFile(file);
+        const reader = new FileReader();
+        reader.onload = () => setLogoPreview(reader.result as string);
+        reader.readAsDataURL(file);
+    }
+
+    function removeLogo() {
+        setLogoFile(null);
+        setLogoPreview(null);
+        if (logoInputRef.current) logoInputRef.current.value = "";
+    }
 
     async function handleSignup(e: React.FormEvent) {
         e.preventDefault();
@@ -71,7 +93,30 @@ export default function SignupPage() {
                 return;
             }
 
-            // 3. Create profile
+            // 3. Upload logo if provided
+            let logoUrl: string | null = null;
+            if (logoFile) {
+                const ext = logoFile.name.split(".").pop() || "png";
+                const filePath = `org-logos/${org.id}/logo.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from("documents")
+                    .upload(filePath, logoFile, { upsert: true });
+
+                if (!uploadError) {
+                    const { data: urlData } = supabase.storage
+                        .from("documents")
+                        .getPublicUrl(filePath);
+                    logoUrl = urlData.publicUrl;
+                }
+            }
+
+            // 4. Update org with logo_url and owner_id
+            await supabase
+                .from("organizations")
+                .update({ owner_id: userId, ...(logoUrl ? { logo_url: logoUrl } : {}) })
+                .eq("id", org.id);
+
+            // 5. Create profile
             const { error: profileError } = await supabase.from("profiles").insert({
                 id: userId,
                 org_id: org.id,
@@ -86,13 +131,7 @@ export default function SignupPage() {
                 return;
             }
 
-            // 4. Set owner_id on organization
-            await supabase
-                .from("organizations")
-                .update({ owner_id: userId })
-                .eq("id", org.id);
-
-            // 5. Seed product types
+            // 6. Seed product types
             const productTypes = [
                 { org_id: org.id, name: "2W", category: "motor", requires_vehicle: true },
                 { org_id: org.id, name: "PVT CAR", category: "motor", requires_vehicle: true },
@@ -107,7 +146,7 @@ export default function SignupPage() {
             ];
             await supabase.from("product_types").insert(productTypes);
 
-            // 6. Seed insurance companies
+            // 7. Seed insurance companies
             const companies = [
                 { org_id: org.id, name: "GO DIGIT GENERAL INSURANCE", short_name: "Go Digit" },
                 { org_id: org.id, name: "RELIANCE GENERAL INSURANCE", short_name: "Reliance" },
@@ -127,7 +166,7 @@ export default function SignupPage() {
             ];
             await supabase.from("insurance_companies").insert(companies);
 
-            toast.success("Account created! Welcome to Kavach 🛡️");
+            toast.success("Account created! Welcome to Sanchal 🎉");
             router.push("/");
             router.refresh();
         } catch (err) {
@@ -144,7 +183,7 @@ export default function SignupPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <div className="inline-flex w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 items-center justify-center text-white font-bold text-xl mb-4 shadow-lg shadow-indigo-500/20">
-                        K
+                        S
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create your account</h1>
                     <p className="text-sm text-slate-500 mt-1">Start managing your insurance portfolio for free</p>
@@ -162,6 +201,43 @@ export default function SignupPage() {
                             required
                             className="flex h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         />
+                    </div>
+
+                    {/* Company Logo Upload */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-700">Company Logo <span className="text-slate-400 font-normal">(optional)</span></label>
+                        <input
+                            ref={logoInputRef}
+                            type="file"
+                            className="hidden"
+                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            onChange={handleLogoSelect}
+                        />
+                        {logoPreview ? (
+                            <div className="relative w-full flex items-center gap-4 p-3 border border-slate-200 rounded-lg bg-slate-50">
+                                <img
+                                    src={logoPreview}
+                                    alt="Logo preview"
+                                    className="w-12 h-12 rounded-lg object-contain bg-white border border-slate-100 p-1"
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-700 truncate">{logoFile?.name}</p>
+                                    <p className="text-xs text-slate-400">{logoFile ? `${(logoFile.size / 1024).toFixed(0)} KB` : ""}</p>
+                                </div>
+                                <button type="button" onClick={removeLogo} className="text-slate-400 hover:text-red-500 transition-colors">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => logoInputRef.current?.click()}
+                                className="w-full flex items-center justify-center gap-2 h-11 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 hover:bg-indigo-50/50 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                            >
+                                <Upload className="w-4 h-4" />
+                                Upload Logo
+                            </button>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -231,6 +307,7 @@ export default function SignupPage() {
                         Sign in
                     </Link>
                 </p>
+                <p className="text-center text-[11px] text-slate-400 mt-4">Powered by <span className="font-semibold text-indigo-500">Sanchal</span></p>
             </div>
         </div>
     );

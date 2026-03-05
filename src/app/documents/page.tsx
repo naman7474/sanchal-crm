@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Upload, FileText, FileImage, Download, MoreVertical, Calendar, Loader2, Trash2 } from "lucide-react";
+import { Search, Upload, FileText, FileImage, Download, Calendar, Loader2, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDocuments, useUploadDocument, useDeleteDocument } from "@/lib/hooks/use-documents";
 import { createClient } from "@/lib/supabase/client";
@@ -108,7 +108,10 @@ export default function DocumentsPage() {
 
                                 <div className="flex-1 min-w-0 pr-8">
                                     <h3 className="font-semibold text-[15px] text-slate-900 truncate" title={doc.document_name}>{doc.document_name}</h3>
-                                    <p className="text-[13px] text-slate-500 truncate mt-0.5">{doc.customers?.customer_name || "—"}</p>
+                                    <p className="text-[13px] text-slate-500 truncate mt-0.5">
+                                        {doc.customers?.customer_name || "—"}
+                                        {(doc as any).policies?.policy_no && ` · ${(doc as any).policies.policy_no}`}
+                                    </p>
                                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400 font-medium whitespace-nowrap">
                                         <span>{formatFileSize(doc.file_size)}</span>
                                         <span className="w-1 h-1 bg-slate-300 rounded-full flex-shrink-0"></span>
@@ -119,6 +122,9 @@ export default function DocumentsPage() {
                                 <div className="absolute top-2 right-2 flex flex-col gap-1">
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900" onClick={() => handleDownload(doc.file_path, doc.document_name)}>
                                         <Download className="w-4 h-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(doc.id, doc.file_path)}>
+                                        <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </div>
                             </div>
@@ -131,7 +137,8 @@ export default function DocumentsPage() {
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] uppercase font-semibold">
                                 <tr>
                                     <th className="px-6 py-4 rounded-tl-xl">File Name</th>
-                                    <th className="px-6 py-4">Related To</th>
+                                    <th className="px-6 py-4">Customer</th>
+                                    <th className="px-6 py-4">Policy #</th>
                                     <th className="px-6 py-4">Size</th>
                                     <th className="px-6 py-4">Uploaded</th>
                                     <th className="px-6 py-4 text-right rounded-tr-xl">Actions</th>
@@ -152,6 +159,9 @@ export default function DocumentsPage() {
                                         </td>
                                         <td className="px-6 py-4 text-slate-700 font-medium">
                                             {doc.customers?.customer_name || "—"}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500">
+                                            {(doc as any).policies?.policy_no || "—"}
                                         </td>
                                         <td className="px-6 py-4 text-slate-500">
                                             {formatFileSize(doc.file_size)}

@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, X, Loader2, Wallet, AlertCircle } from "lucide-react";
+import { Plus, Search, X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCustomers } from "@/lib/hooks/use-customers";
+import { QuickCreateCustomer } from "@/components/customers/QuickCreateCustomer";
 import Link from "next/link";
 
 const STATUS_OPTIONS = [
@@ -32,6 +33,7 @@ export default function CustomersPage() {
     const { data: customers, isLoading } = useCustomers(searchQuery || undefined);
     const [statusFilter, setStatusFilter] = useState("");
     const [sourceFilter, setSourceFilter] = useState("");
+    const [showCreate, setShowCreate] = useState(false);
 
     const filtered = useMemo(() => {
         if (!customers) return [];
@@ -51,10 +53,11 @@ export default function CustomersPage() {
                     <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">Clients</h1>
                     <p className="text-xs md:text-sm text-slate-500 mt-0.5">Manage your clients and their portfolios</p>
                 </div>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm h-9 md:h-11 text-sm px-3 md:px-4 shrink-0" asChild>
-                    <Link href="/customers/new">
-                        <Plus className="w-4 h-4 mr-1.5" /> Add Client
-                    </Link>
+                <Button
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm h-9 md:h-11 text-sm px-3 md:px-4 shrink-0"
+                    onClick={() => setShowCreate(true)}
+                >
+                    <Plus className="w-4 h-4 mr-1.5" /> Add Client
                 </Button>
             </div>
 
@@ -96,8 +99,8 @@ export default function CustomersPage() {
                     <p className="text-slate-900 font-semibold mb-1">{hasFilters ? "No matching clients" : "No clients yet"}</p>
                     <p className="text-sm text-slate-500 mb-3">{hasFilters ? "Try adjusting your filters" : "Add your first client to get started"}</p>
                     {!hasFilters && (
-                        <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white h-9 text-sm">
-                            <Link href="/customers/new"><Plus className="w-4 h-4 mr-1.5" /> Add Client</Link>
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-9 text-sm" onClick={() => setShowCreate(true)}>
+                            <Plus className="w-4 h-4 mr-1.5" /> Add Client
                         </Button>
                     )}
                 </div>
@@ -195,6 +198,8 @@ export default function CustomersPage() {
                     </div>
                 </>
             )}
+
+            <QuickCreateCustomer open={showCreate} onOpenChange={setShowCreate} />
         </div>
     );
 }

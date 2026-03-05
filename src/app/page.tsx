@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Wallet, BarChart, AlertTriangle, MessageSquare, Phone, Loader2 } from "lucide-react";
+import { ClipboardList, Wallet, BarChart, AlertTriangle, MessageSquare, Phone, Loader2, UserPlus } from "lucide-react";
 import { useDashboardStats, useExpiringPolicies, useTodayFollowUps } from "@/lib/hooks/use-dashboard";
 import { useAuth } from "@/providers/AuthProvider";
+import { QuickCreateCustomer } from "@/components/customers/QuickCreateCustomer";
 import Link from "next/link";
 
 function formatCurrency(amount: number | null): string {
@@ -20,6 +22,7 @@ export default function Home() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: expiringPolicies, isLoading: expiringLoading } = useExpiringPolicies(7);
   const { data: followUps, isLoading: followUpsLoading } = useTodayFollowUps();
+  const [showCreate, setShowCreate] = useState(false);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -134,14 +137,12 @@ export default function Home() {
           <div className="bg-white border text-card-foreground shadow-sm rounded-xl p-5 md:p-6 hidden lg:block">
             <h3 className="font-semibold leading-none tracking-tight mb-5 text-[16px]">Quick Actions</h3>
             <div className="flex flex-col gap-3">
-              <Button className="w-full justify-start text-[14px] font-semibold h-11" size="lg" asChild>
-                <Link href="/policies/new">+ New Policy</Link>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start text-[14px] font-semibold h-11 bg-slate-100 hover:bg-slate-200 text-slate-700" size="lg" asChild>
-                <Link href="/customers/new">+ Add Client</Link>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start text-[14px] font-semibold h-11 bg-slate-100 hover:bg-slate-200 text-slate-700" size="lg" asChild>
-                <Link href="/leads">+ New Lead</Link>
+              <Button
+                className="w-full justify-start text-[14px] font-semibold h-11"
+                size="lg"
+                onClick={() => setShowCreate(true)}
+              >
+                <UserPlus className="w-4 h-4 mr-2" /> New Customer
               </Button>
             </div>
           </div>
@@ -173,6 +174,7 @@ export default function Home() {
         </div>
       </div>
 
+      <QuickCreateCustomer open={showCreate} onOpenChange={setShowCreate} />
     </div>
   );
 }

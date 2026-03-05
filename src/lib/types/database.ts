@@ -10,6 +10,7 @@ export interface Organization {
     phone: string | null;
     email: string | null;
     address: string | null;
+    logo_url: string | null;
     plan: "trial" | "free" | "pro" | "suspended";
     trial_ends_at: string | null;
     plan_active_until: string | null;

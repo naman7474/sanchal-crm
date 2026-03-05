@@ -12,7 +12,7 @@ export function useDocuments(customerId?: string, limit: number = DEFAULT_LIMIT)
         queryFn: async () => {
             let query = supabase
                 .from("documents")
-                .select("*, customers(customer_name)")
+                .select("*, customers(customer_name), policies(policy_no)")
                 .order("created_at", { ascending: false })
                 .limit(limit);
 
@@ -22,7 +22,7 @@ export function useDocuments(customerId?: string, limit: number = DEFAULT_LIMIT)
 
             const { data, error } = await query;
             if (error) throw error;
-            return data as (DocType & { customers: { customer_name: string } | null })[];
+            return data as (DocType & { customers: { customer_name: string } | null; policies: { policy_no: string } | null })[];
         },
     });
 }

@@ -42,9 +42,9 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <div className="inline-flex w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 items-center justify-center text-white font-bold text-xl mb-4 shadow-lg shadow-indigo-500/20">
-                        K
+                        S
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome to Kavach</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
                     <p className="text-sm text-slate-500 mt-1">Sign in to manage your insurance portfolio</p>
                 </div>
 
@@ -100,6 +100,7 @@ export default function LoginPage() {
                         Sign up
                     </Link>
                 </p>
+                <p className="text-center text-[11px] text-slate-400 mt-4">Powered by <span className="font-semibold text-indigo-500">Sanchal</span></p>
             </div>
         </div>
     );

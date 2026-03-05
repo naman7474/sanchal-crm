@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, UploadCloud, Loader2 } from "lucide-react";
+import { Copy, UploadCloud, Loader2, X, FileText } from "lucide-react";
 import { useCreatePolicy } from "@/lib/hooks/use-policies";
 import { useCustomers } from "@/lib/hooks/use-customers";
+import { useUploadDocument } from "@/lib/hooks/use-documents";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { InsuranceCompany, ProductType } from "@/lib/types/database";
@@ -52,7 +53,10 @@ export function PolicyForm() {
     const preselectedCustomer = searchParams.get("customer") || "";
 
     const createPolicy = useCreatePolicy();
+    const uploadDocument = useUploadDocument();
     const { data: customers } = useCustomers();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const { data: companies } = useInsuranceCompanies();
     const { data: productTypes } = useProductTypes();
 
@@ -121,7 +125,7 @@ export function PolicyForm() {
         }
 
         try {
-            await createPolicy.mutateAsync({
+            const policy = await createPolicy.mutateAsync({
                 customer_id: form.customer_id,
                 company_name: form.company_name,
                 product: form.product,
@@ -139,7 +143,7 @@ export function PolicyForm() {
                 reference: form.reference || null,
                 notes: form.notes || null,
                 status: form.status,
-                before_tds: 0, // will be auto-calc'd in hook
+                before_tds: 0,
                 tds_amount: 0,
                 commission: 0,
                 sub_before_tds: 0,
@@ -149,6 +153,21 @@ export function PolicyForm() {
                 sum_insured: null,
                 renewal_of: null,
             });
+
+            // Upload attached files
+            for (const file of selectedFiles) {
+                try {
+                    await uploadDocument.mutateAsync({
+                        file,
+                        customerId: form.customer_id,
+                        policyId: policy.id,
+                        documentType: "policy_copy",
+                    });
+                } catch {
+                    toast.error(`Failed to upload ${file.name}`);
+                }
+            }
+
             toast.success("Policy saved successfully!");
             router.push("/policies");
         } catch (err: unknown) {
@@ -159,18 +178,18 @@ export function PolicyForm() {
 
     return (
         <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {/* Main Form Area */}
-                <div className="md:col-span-2 space-y-6">
+                <div className="md:col-span-2 space-y-4">
 
                     {/* Customer Selection */}
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden border-t-4 border-t-indigo-500">
-                        <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                            <CardTitle className="text-lg">Client</CardTitle>
-                            <CardDescription>Select the client for this policy</CardDescription>
+                        <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                            <CardTitle className="text-base">Client</CardTitle>
+                            <CardDescription className="text-xs">Select the client for this policy</CardDescription>
                         </CardHeader>
-                        <CardContent className="pt-6">
+                        <CardContent className="pt-4 pb-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700">Customer <span className="text-red-500">*</span></label>
                                 <select
@@ -189,11 +208,11 @@ export function PolicyForm() {
                     </Card>
 
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden">
-                        <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                            <CardTitle className="text-lg">Policy Details</CardTitle>
-                            <CardDescription>Enter the core details of the insurance policy.</CardDescription>
+                        <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                            <CardTitle className="text-base">Policy Details</CardTitle>
+                            <CardDescription className="text-xs">Core details of the insurance policy</CardDescription>
                         </CardHeader>
-                        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-4">
+                        <CardContent className="pt-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-4">
 
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700">Insurance Company <span className="text-red-500">*</span></label>
@@ -258,10 +277,10 @@ export function PolicyForm() {
                     </Card>
 
                     <Card className="rounded-xl border-slate-200 shadow-sm overflow-hidden">
-                        <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
-                            <CardTitle className="text-lg">Financials</CardTitle>
+                        <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                            <CardTitle className="text-base">Financials</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-6">
+                        <CardContent className="pt-4 pb-4 space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Net OD Premium (₹) <span className="text-red-500">*</span></label>
@@ -310,6 +329,10 @@ export function PolicyForm() {
                                     <Input value={form.agent_name} onChange={e => updateField("agent_name", e.target.value)} placeholder="Agent name" className="h-11" />
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Reference / Referrer</label>
+                                <Input value={form.reference} onChange={e => updateField("reference", e.target.value)} placeholder="e.g. Rohit BKB, Shyam Car Bazar" className="h-11" />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -319,19 +342,44 @@ export function PolicyForm() {
                 <div className="space-y-6">
 
                     <Card className="rounded-xl border-slate-200 shadow-sm">
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-base">Document Upload</CardTitle>
-                            <CardDescription className="text-xs">Upload policy PDF or images</CardDescription>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Documents</CardTitle>
+                            <CardDescription className="text-xs">Attach policy PDFs or images</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
-                                    <UploadCloud className="w-5 h-5 text-indigo-600" />
-                                </div>
-                                <p className="text-sm font-medium text-slate-900">Click to upload</p>
-                                <p className="text-xs text-slate-500 mt-1">or drag and drop</p>
-                                <p className="text-[10px] text-slate-400 mt-2 uppercase font-semibold tracking-wider">PDF, JPG, PNG up to 10MB</p>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                multiple
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                                onChange={(e) => {
+                                    const files = Array.from(e.target.files || []);
+                                    setSelectedFiles(prev => [...prev, ...files]);
+                                    if (fileInputRef.current) fileInputRef.current.value = "";
+                                }}
+                            />
+                            <div
+                                className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-colors cursor-pointer"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <UploadCloud className="w-6 h-6 text-indigo-500 mb-1.5" />
+                                <p className="text-sm font-medium text-slate-700">Click to select files</p>
+                                <p className="text-[10px] text-slate-400 mt-1">PDF, JPG, PNG up to 10MB</p>
                             </div>
+                            {selectedFiles.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                    {selectedFiles.map((file, i) => (
+                                        <div key={i} className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2 text-sm">
+                                            <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                                            <span className="truncate flex-1 text-slate-700">{file.name}</span>
+                                            <button type="button" onClick={() => setSelectedFiles(prev => prev.filter((_, j) => j !== i))} className="text-slate-400 hover:text-red-500">
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 

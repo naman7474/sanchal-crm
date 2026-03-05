@@ -18,7 +18,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kavach | Agent Portfolio Manager",
+  title: "Sanchal | Insurance Portfolio Manager",
   description: "A lightweight, zero-cost insurance agent CRM",
   manifest: "/manifest.json",
 };
