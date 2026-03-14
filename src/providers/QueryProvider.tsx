@@ -12,9 +12,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
                         staleTime: 5 * 60 * 1000,        // 5 minutes — data stays fresh
                         gcTime: 10 * 60 * 1000,           // 10 minutes — keep cache in memory
                         refetchOnWindowFocus: false,
-                        refetchOnMount: false,             // Don't refetch if cache is fresh
+                        refetchOnMount: true,              // Refetch on mount to handle page reloads
                         retry: 1,                          // Only retry once on failure
-                        refetchOnReconnect: false,
+                        refetchOnReconnect: true,          // Refetch when network reconnects
                     },
                 },
             })

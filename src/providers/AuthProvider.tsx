@@ -43,41 +43,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        // Get initial session
-        const getInitialSession = async () => {
-            try {
-                const { data: { session: currentSession } } = await supabase.auth.getSession();
-                setSession(currentSession);
-                setUser(currentSession?.user ?? null);
+        let isMounted = true;
 
-                if (currentSession?.user) {
-                    await fetchProfileAndOrg(currentSession.user.id);
-                }
-            } catch (error) {
-                console.error("Error getting session:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        getInitialSession();
-
-        // Listen for auth changes
+        // Listen for auth changes - this handles ALL session state including initial load
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: any, newSession: any) => {
+                if (!isMounted) return;
+
                 setSession(newSession);
                 setUser(newSession?.user ?? null);
 
-                if (event === "SIGNED_IN" && newSession?.user) {
+                // Handle all relevant auth events that need profile/org data
+                if ((event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") && newSession?.user) {
                     await fetchProfileAndOrg(newSession.user.id);
+                    // Invalidate all queries so they refetch with fresh auth
+                    queryClient.invalidateQueries();
+                    setIsLoading(false);
                 } else if (event === "SIGNED_OUT") {
                     setProfile(null);
                     setOrganization(null);
+                    queryClient.clear();
+                    setIsLoading(false);
+                } else {
+                    // No session on initial load
+                    setIsLoading(false);
                 }
             }
         );
 
+        // Trigger the initial session check - this will fire INITIAL_SESSION event
+        supabase.auth.getSession();
+
         return () => {
+            isMounted = false;
             subscription.unsubscribe();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -83,6 +83,7 @@ export default function SignupPage() {
                     name: orgName,
                     slug: `${slug}-${Date.now().toString(36)}`,
                     email: email,
+                    owner_id: userId,
                 })
                 .select()
                 .single();
@@ -110,11 +111,13 @@ export default function SignupPage() {
                 }
             }
 
-            // 4. Update org with logo_url and owner_id
-            await supabase
-                .from("organizations")
-                .update({ owner_id: userId, ...(logoUrl ? { logo_url: logoUrl } : {}) })
-                .eq("id", org.id);
+            // 4. Update org with logo_url
+            if (logoUrl) {
+                await supabase
+                    .from("organizations")
+                    .update({ logo_url: logoUrl })
+                    .eq("id", org.id);
+            }
 
             // 5. Create profile
             const { error: profileError } = await supabase.from("profiles").insert({
