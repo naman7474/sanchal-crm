@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Listen for auth changes - this handles ALL session state including initial load
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event: any, newSession: any) => {
+            (event: any, newSession: any) => {
                 if (!isMounted) return;
 
                 setSession(newSession);
@@ -55,10 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 // Handle all relevant auth events that need profile/org data
                 if ((event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") && newSession?.user) {
-                    await fetchProfileAndOrg(newSession.user.id);
+                    // Set loading false immediately - don't wait for profile fetch
+                    setIsLoading(false);
+                    // Fetch profile in background (non-blocking)
+                    fetchProfileAndOrg(newSession.user.id, () => isMounted);
                     // Invalidate all queries so they refetch with fresh auth
                     queryClient.invalidateQueries();
-                    setIsLoading(false);
                 } else if (event === "SIGNED_OUT") {
                     setProfile(null);
                     setOrganization(null);
@@ -81,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    async function fetchProfileAndOrg(userId: string) {
+    async function fetchProfileAndOrg(userId: string, checkMounted?: () => boolean) {
         try {
             // Single query: fetch profile with org joined
             const { data: profileData } = await supabase
@@ -89,6 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .select("*, organizations(*)")
                 .eq("id", userId)
                 .single();
+
+            // Don't update state if component unmounted
+            if (checkMounted && !checkMounted()) return;
 
             if (profileData) {
                 const { organizations: orgData, ...profileOnly } = profileData as Record<string, unknown>;

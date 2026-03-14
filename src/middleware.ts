@@ -29,10 +29,11 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // Refresh session (important!)
+    // Use getSession for fast cookie-based check (no network call)
+    // Security is enforced by Supabase RLS on the database side
     const {
-        data: { user },
-    } = await supabase.auth.getUser();
+        data: { session },
+    } = await supabase.auth.getSession();
 
     // Public routes that don't require auth
     const publicRoutes = ["/login", "/signup"];
@@ -41,14 +42,14 @@ export async function middleware(request: NextRequest) {
     );
 
     // If user is not authenticated and trying to access a protected route
-    if (!user && !isPublicRoute) {
+    if (!session && !isPublicRoute) {
         const url = request.nextUrl.clone();
         url.pathname = "/login";
         return NextResponse.redirect(url);
     }
 
     // If user is authenticated and trying to access login/signup, redirect to dashboard
-    if (user && isPublicRoute) {
+    if (session && isPublicRoute) {
         const url = request.nextUrl.clone();
         url.pathname = "/";
         return NextResponse.redirect(url);
